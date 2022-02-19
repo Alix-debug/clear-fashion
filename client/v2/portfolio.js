@@ -1,7 +1,10 @@
 // Invoking strict mode https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Strict_mode#invoking_strict_mode
 'use strict';
+// All distinct brands
+const all_brands = ['loom', 'coteleparis', 'adresse', '1083', 'dedicated'];
 
 // current products on the page
+let currentBrand="";
 let currentProducts = [];
 let currentPagination = {};
 
@@ -18,11 +21,28 @@ const spanNbProducts = document.querySelector('#nbProducts');
  * @param {Array} result - products to display
  * @param {Object} meta - pagination meta info
  */
-
 const setCurrentProducts = ({result, meta}) => {
   currentProducts = result;
   currentPagination = meta;
 };
+
+/**
+ * Set global value
+ * @param {string} selected_brand 
+ * @param {Array} brands 
+ */
+ const setCurrentBrand = (selected_brand)=>{
+  console.log("setCurrentBrand   selected brand",selected_brand)
+  currentBrand=selected_brand;
+}
+
+
+/** 
+ *  Declaration of onlyUnique function that returns unique items of an array
+*/
+function onlyUnique(value, index, self) {
+  return self.indexOf(value) === index;
+}
 
 /**
  * Fetch products from api
@@ -30,20 +50,45 @@ const setCurrentProducts = ({result, meta}) => {
  * @param  {Number}  [size=12] - size of the page (per default at 12)
  * @return {Object}
  */
-const fetchProducts = async (page = 1, size = 12) => {
+const fetchProducts = async (page = 1, size = 12,brandname="") => {
   try {
-    const response = await fetch(
-      `https://clear-fashion-api.vercel.app?page=${page}&size=${size}`
-    );
-    const body = await response.json();
-
+   
+      const response = await fetch(
+        `https://clear-fashion-api.vercel.app?page=${page}&size=${size}&brand=${brandname}`
+      );
+      const body = await response.json();
+    
+    
     if (body.success !== true) {
       console.error(body);
       return {currentProducts, currentPagination};
     }
 
+    /**
+     * to find all distinct brands
+     */
+    /*const all_brands= await fetch(
+      `https://clear-fashion-api.vercel.app?page=1&size=139`
+    );
+    const body_all_brand = await all_brands.json();
+    
+    if (body_all_brand.success !== true) {
+      console.error(body_all_brand);
+      return {currentProducts, currentPagination};
+    }
+
+    var brands=[]
+    for(let i =0;i<body_all_brand.data.result.length;i++){
+      brands.push(body_all_brand.data.result[i].brand);
+    }
+    const unique_brands = brands.filter(onlyUnique);
+    //console.log("Here is the list of all available brands :",unique_brands);
+    */
+
     return body.data;
-  } catch (error) {
+
+  } 
+  catch (error) {
     console.error(error);
     return {currentProducts, currentPagination};
   }
@@ -75,6 +120,21 @@ const renderProducts = products => {
 };
 
 /**
+ * Render brand selector
+ * @param  {Object} brand
+ */
+ const renderBrands = brand => {
+  const currentBrand=brand;
+  const options = Array.from(
+    {'length': all_brands.length},
+    (value, index) => `<option value="${all_brands[index]}">${all_brands[index]}</option>`
+  ).join('');
+
+  selectBrand.innerHTML = options;
+  selectBrand.value=currentBrand;
+};
+
+/**
  * Render page selector
  * @param  {Object} pagination
  */
@@ -89,6 +149,7 @@ const renderPagination = pagination => {
   selectPage.selectedIndex = currentPage - 1;
 };
 
+
 /** 
  * Render page indicators
  * @param  {Object} pagination
@@ -99,10 +160,11 @@ const renderIndicators = pagination => {
   spanNbProducts.innerHTML = count;
 };
 
-const render = (products, pagination) => {
+const render = (products, pagination, brand) => {
   renderProducts(products);
   renderPagination(pagination);
   renderIndicators(pagination);
+  renderBrands(brand)
 };
 
 /**
@@ -116,11 +178,13 @@ const render = (products, pagination) => {
  *    So that I can display 12, 24 or 48 products on the same page
  */
 selectShow.addEventListener('change', async (event) => {
-  const products = await fetchProducts(1, parseInt(event.target.value));
+  const products = await fetchProducts(1, parseInt(event.target.value),selectBrand.value);
   console.log("selectShow")
   console.log("products",products)
+  console.log("selected brand",selectBrand.value)
+  setCurrentBrand(selectBrand.value)
   setCurrentProducts(products);//change the pagination
-  render(currentProducts, currentPagination);
+  render(currentProducts, currentPagination,currentBrand);
 });
 
 /* selectPage.addEventListener : enable to change the page
@@ -132,35 +196,43 @@ selectShow.addEventListener('change', async (event) => {
 selectPage.addEventListener('change', async (event) => {
   //Reminder : fetchProducts = async (page = 1, size = 12)
   //parseInt(event.target.value) = n° of the page
-  const products = await fetchProducts(parseInt(event.target.value),parseInt(selectShow.value));
-  console.log("selectPage")
-  console.log("products",products)
-
+  //parseInt(selectShow.value) = nb of products to show
+  const products = await fetchProducts(parseInt(event.target.value),parseInt(selectShow.value),selectBrand.value);
+  console.log("selectPage");
+  console.log("products",products);
+  console.log("selected brand",selectBrand.value)
+  setCurrentBrand(selectBrand.value)
   setCurrentProducts(products);//change the pagination
-  render(currentProducts, currentPagination);
+  render(currentProducts, currentPagination,currentBrand);
 });
 
+/* selectBrand.addEventListener : filter the product by brand
+* Feature 2 - Filter by brands
+*    As a user
+*    I want to filter by brands name
+*    So that I can browse product for a specific brand
+*/
 selectBrand.addEventListener('change', async (event) =>{
-  
+  console.log("selectBrand");
+  console.log("brand ",event.target.value)
+  const products = await fetchProducts(parseInt(selectPage.value),parseInt(selectShow.value),event.target.value)
+  const brand = event.target.value
 
+  setCurrentBrand(event.target.value)
+  setCurrentProducts(products);//change the pagination
+  render(currentProducts, currentPagination,currentBrand);
 });
 
 
 document.addEventListener('DOMContentLoaded', async () => {
    const products = await fetchProducts();
    setCurrentProducts(products);
-   render(currentProducts, currentPagination);
+   render(currentProducts, currentPagination,currentBrand);
 });
 
 
 
 
-/*
-Feature 2 - Filter by brands
-As a user
-I want to filter by brands name
-So that I can browse product for a specific brand
-*/
 
 /*
 Feature 3 - Filter by recent products
