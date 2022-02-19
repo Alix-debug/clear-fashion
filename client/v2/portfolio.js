@@ -8,6 +8,8 @@ let currentPagination = {};
 // instantiate the selectors
 const selectShow = document.querySelector('#show-select');
 const selectPage = document.querySelector('#page-select');
+const selectBrand = document.querySelector('#brand-select')
+
 const sectionProducts = document.querySelector('#products');
 const spanNbProducts = document.querySelector('#nbProducts');
 
@@ -87,13 +89,8 @@ const renderPagination = pagination => {
   selectPage.selectedIndex = currentPage - 1;
 };
 
-/** renderIndicators :Render page selector (enable to change the page)
- * 
- *  Correspond to Feature 1 - Browse pages
- *    As a user
- *    I want to browse available pages
- *    So that I can load more products
- *
+/** 
+ * Render page indicators
  * @param  {Object} pagination
  */
 const renderIndicators = pagination => {
@@ -119,9 +116,33 @@ const render = (products, pagination) => {
  *    So that I can display 12, 24 or 48 products on the same page
  */
 selectShow.addEventListener('change', async (event) => {
-  const products = await fetchProducts(currentPagination.currentPage, parseInt(event.target.value));
+  const products = await fetchProducts(1, parseInt(event.target.value));
+  console.log("selectShow")
+  console.log("products",products)
   setCurrentProducts(products);//change the pagination
   render(currentProducts, currentPagination);
+});
+
+/* selectPage.addEventListener : enable to change the page
+ *  Correspond to Feature 1 - Browse pages
+ *    As a user
+ *    I want to browse available pages
+ *    So that I can load more products
+*/
+selectPage.addEventListener('change', async (event) => {
+  //Reminder : fetchProducts = async (page = 1, size = 12)
+  //parseInt(event.target.value) = n° of the page
+  const products = await fetchProducts(parseInt(event.target.value),parseInt(selectShow.value));
+  console.log("selectPage")
+  console.log("products",products)
+
+  setCurrentProducts(products);//change the pagination
+  render(currentProducts, currentPagination);
+});
+
+selectBrand.addEventListener('change', async (event) =>{
+  
+
 });
 
 
@@ -140,6 +161,7 @@ As a user
 I want to filter by brands name
 So that I can browse product for a specific brand
 */
+
 /*
 Feature 3 - Filter by recent products
 As a user
