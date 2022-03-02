@@ -12,9 +12,27 @@ let currentPagination = {};
 const selectShow = document.querySelector('#show-select');
 const selectPage = document.querySelector('#page-select');
 const selectBrand = document.querySelector('#brand-select')
+const selectFilter = document.querySelector('#filter-select')
 
 const sectionProducts = document.querySelector('#products');
 const spanNbProducts = document.querySelector('#nbProducts');
+
+/**
+ * 
+ * @param {array} product_date 
+ * @returns the number of day between the release date of the product and now
+ */
+function recent_product(product_date){
+  console.log("debug",product_date)
+  var today = new Date();
+  var day = today.getDate();
+  var month = today.getMonth()+1; 
+  var year = today.getFullYear();
+
+  var now=year * 365.25 + month * 30 + day
+  var product_release = product_date.slice(0, 4)* 365.25 + product_date.slice(5, 7) * 30 + product_date.slice(8, 10);
+  return parseInt(now - product_release)
+}
 
 /**
  * Set global value
@@ -223,6 +241,54 @@ selectBrand.addEventListener('change', async (event) =>{
   render(currentProducts, currentPagination,currentBrand);
 });
 
+/*
+Feature 3 - Filter by recent products
+As a user
+I want to filter by recent products
+So that I can browse the new released products (less than 2 weeks)
+*/
+
+selectFilter.addEventListener('change', async (event) =>{
+  
+  const products = await fetchProducts(parseInt(selectPage.value),parseInt(selectShow.value),selectBrand.value)
+  console.log(products.result)
+  let recent_products=[]
+
+  if(event.target.value=="By recently released")
+  {
+    products.result.forEach(
+      element => 
+        {
+         if(recent_product(element.released)<=144)
+           recent_products.push(element)
+     }
+     )
+     products.result=recent_products;
+  }
+
+  /*
+  Feature 4 - Filter by reasonable price
+  As a user
+  I want to filter by reasonable price
+  So that I can buy affordable product i.e less than 50€
+  */
+  else {
+    
+    products.result.forEach(
+      element => 
+        {
+         if(element.price<=50)
+           recent_products.push(element)
+     }
+     )
+     products.result=recent_products;
+
+  }
+  setCurrentProducts(products);//change the pagination
+  render(currentProducts, currentPagination,currentBrand);
+});
+
+
 
 document.addEventListener('DOMContentLoaded', async () => {
    const products = await fetchProducts();
@@ -233,19 +299,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
 
-
-/*
-Feature 3 - Filter by recent products
-As a user
-I want to filter by by recent products
-So that I can browse the new released products (less than 2 weeks)
-*/
-/*
-Feature 4 - Filter by reasonable price
-As a user
-I want to filter by reasonable price
-So that I can buy affordable product i.e less than 50€
-*/
 /*
 Feature 5 - Sort by price
 As a user
