@@ -3,27 +3,64 @@
 // All distinct brands
 const all_brands = ['loom', 'coteleparis', 'adresse', '1083', 'dedicated'];
 
+
 // current products on the page
 let currentBrand="";
 let currentProducts = [];
 let currentPagination = {};
+let myFavourites=[];
 
 // instantiate the selectors
 const selectShow = document.querySelector('#show-select');
 const selectPage = document.querySelector('#page-select');
 const selectBrand = document.querySelector('#brand-select')
 const selectFilter = document.querySelector('#filter-select')
+const selectSort = document.querySelector('#sort-select')
+const spanP50 = document.querySelector('#p50')
+const spanP90 = document.querySelector('#p90')
+const spanP95= document.querySelector('#p95')
 
 const sectionProducts = document.querySelector('#products');
 const spanNbProducts = document.querySelector('#nbProducts');
+const spanNbNewProducts = document.querySelector('#nbNewProducts');
+const spanLastReleased = document.querySelector('#last_released')
+
+
+ /**
+  * Feature 10 - p50, p90 and p95 price value indicator
+  * As a user
+  * I want to indicate the p50, p90 and p95 price value
+  * So that I can understand the price values of the products
+  * Note : The p90 value (90th percentile) is the lower value expected to be exceeded in 90% of the products prices
+  * @param {Object} array 
+  * @param {float} quantile 
+  * @returns 
+  */
+
+function quantile(array, quantile){
+  const sorted = array.sort((a,b) => (a.price<b.price)?1:-1);
+  var pos = (sorted.length - 1) * quantile,
+      low = Math.floor(pos),
+      rest = pos - low;
+
+  if (sorted[low + 1] !== undefined) {
+      return (sorted[low].price + rest * (sorted[low + 1].price - sorted[low].price)).toFixed(2);
+  } else {
+      return sorted[low].price;
+  }
+};
 
 /**
- * 
+  *
+  Feature 3 - Filter by recent products
+  As a user
+  I want to filter by recent products
+  So that I can browse the new released products (less than 2 weeks)
+  *
  * @param {array} product_date 
  * @returns the number of day between the release date of the product and now
  */
-function recent_product(product_date){
-  console.log("debug",product_date)
+function day_date(product_date){
   var today = new Date();
   var day = today.getDate();
   var month = today.getMonth()+1; 
@@ -33,6 +70,97 @@ function recent_product(product_date){
   var product_release = product_date.slice(0, 4)* 365.25 + product_date.slice(5, 7) * 30 + product_date.slice(8, 10);
   return parseInt(now - product_release)
 }
+
+/** Recent_products function
+ * @param {Object} product 
+ * @returns list of products with a release date anterior of 2 weeks
+ */
+function recent_products(product){
+  let recent_products =[]
+  product.forEach(
+    element => 
+      {
+       if(day_date(element.released)<=14) 
+        recent_products.push(element);})
+  return recent_products;
+  }
+
+/** Merging for Sorting Function : from lowest to highest prices of the products
+ * @param {products} left 
+ * @param {products} right 
+ * @returns new sorted array
+ */
+function merge_cheapest(left, right){
+
+  var tab = [], l = 0, r = 0;
+  while (l < left.length && r < right.length){
+      if (left[l].price < right[r].price){
+          tab.push(left[l++]);
+      } else {
+          tab.push(right[r++]);
+      }
+  }
+  return tab.concat(left.slice(l)).concat(right.slice(r));
+}
+
+/** Merging for Sorting Function : from most expensive to cheapest prices of the products
+ * 
+ * @param {products} left 
+ * @param {products} right 
+ * @returns new sorted array
+ */
+ function merge_expensive(left, right){
+
+  var tab = [], l = 0, r = 0;
+  while (l < left.length && r < right.length){
+      if (left[l].price > right[r].price){
+          tab.push(left[l++]);
+      } else {
+          tab.push(right[r++]);
+      }
+  }
+  return tab.concat(left.slice(l)).concat(right.slice(r));
+}
+
+/** function sort by price
+ * 
+ * @param {array} tab array of products
+ * @param {boolean} cheapest = true by default : sort by cheapest 
+ * @returns 
+ */
+function sort(tab,cheapest=true){
+  if (tab.length < 2) {
+      return tab;
+  }
+  var mid = Math.floor(tab.length / 2),
+      right = tab.slice(mid),
+      left = tab.slice(0, mid),
+      p
+
+  if (cheapest===true){
+    p = merge_cheapest(sort(left), sort(right));
+  }
+  if (cheapest===false)
+  {
+    p = merge_expensive(sort(left), sort(right));
+  } 
+      
+  p.unshift(0, tab.length);
+  tab.splice.apply(tab, p);
+  return tab;
+}
+/**
+ * function to save favourite products
+ * @param {string} productID 
+ */
+function AddToFavourite (productID){
+  currentProducts.forEach(element=>{
+    if(element.uuid === productID)
+      myFavourites.push(element);
+  });
+}
+
+
 
 /**
  * Set global value
@@ -114,6 +242,18 @@ const fetchProducts = async (page = 1, size = 12,brandname="") => {
 
 /**
  * Render list of products
+ * 
+ * Feature 12 - Open product link
+ * As a user
+ * I want to open product link in a new page
+ * So that I can buy the product easily
+ * 
+ * 
+ * Feature 13 - Save as favorite
+ * As a user
+ * I want to save a product as favorite
+ * So that I can retreive this product later
+
  * @param  {Array} products
  */
 const renderProducts = products => {
@@ -123,9 +263,10 @@ const renderProducts = products => {
     .map(product => {
       return `
       <div class="product" id=${product.uuid}>
-        <span>${product.brand}</span>
-        <a href="${product.link}">${product.name}</a>
-        <span>${product.price}</span>
+        <span>Brand : ${product.brand}, </span>
+        <a href="${product.link}" target="_blank">${product.name}</a>
+        <span>(Price : ${product.price} €)</span>
+        <button class='myFavourites' onclick=AddToFavourite("${product.uuid}")>♥ Add to My favourite</button>
       </div>
     `;
     })
@@ -167,24 +308,82 @@ const renderPagination = pagination => {
   selectPage.selectedIndex = currentPage - 1;
 };
 
-
 /** 
  * Render page indicators
  * @param  {Object} pagination
- */
-const renderIndicators = pagination => {
-  const {count} = pagination;
+ * 
+ * Feature 8 - Number of products indicator
+ * As a user
+ * I want to indicate the total number of products
+ * So that I can understand how many products is available
+ * 
+ *
+ * Feature 9 - Number of recent products indicator
+ * As a user
+ * I want to indicate the total number of recent products
+ * So that I can understand how many new products are available
+*/
 
+const renderIndicators = (pagination,products) => {
+  const {count} = pagination;
   spanNbProducts.innerHTML = count;
+  spanNbNewProducts.innerHTML = recent_products(products).length;
 };
 
 const render = (products, pagination, brand) => {
   renderProducts(products);
   renderPagination(pagination);
-  renderIndicators(pagination);
-  renderBrands(brand)
+  renderIndicators(pagination,products);
+  renderBrands(brand);
+  renderp50(products);
+  renderp90(products);
+  renderp95(products);
+  lastReleaseYear(products);
 };
 
+/*
+Feature 10 - p50, p90 and p95 price value indicator
+As a user
+I want to indicate the p50, p90 and p95 price value
+So that I can understand the price values of the products
+Note : The p90 value (90th percentile) is the lower value expected to be exceeded in 90% of the products prices
+*/
+/**
+ * Render p50 price value
+ * @param {Object} products 
+ */
+const renderp50 = products => {
+  const p50= quantile(products,0.5);
+  spanP50.innerHTML=p50;
+}
+/**
+ * Render p90 price value
+ * @param {Object} products 
+ */
+const renderp90 = products => {
+  const p90= quantile(products,0.9);
+  spanP90.innerHTML=p90;
+}
+/**
+ * Render p95 price value
+ * @param {Object} products 
+ */
+const renderp95 = products => {
+  const p95= quantile(products,0.95);
+  spanP95.innerHTML=p95;
+}
+/**
+ * Feature 11 - Last released date indicator
+ * As a user
+ * I want to indicate the last released date
+ * So that I can understand if we have new products
+ * @param {Object} products 
+ */
+const lastReleaseYear = products => {
+  products=products.sort((a,b)=>(Date.parse(a.released)<Date.parse(b.released))?1:-1);
+  spanLastReleased.innerHTML=products[0].released
+
+}
 /**
  * Declaration of all Listeners
  */
@@ -241,30 +440,20 @@ selectBrand.addEventListener('change', async (event) =>{
   render(currentProducts, currentPagination,currentBrand);
 });
 
-/*
-Feature 3 - Filter by recent products
-As a user
-I want to filter by recent products
-So that I can browse the new released products (less than 2 weeks)
-*/
-
 selectFilter.addEventListener('change', async (event) =>{
   
   const products = await fetchProducts(parseInt(selectPage.value),parseInt(selectShow.value),selectBrand.value)
   console.log(products.result)
-  let recent_products=[]
-
-  if(event.target.value=="By recently released")
-  {
-    products.result.forEach(
-      element => 
-        {
-         if(recent_product(element.released)<=144)
-           recent_products.push(element)
-     }
-     )
-     products.result=recent_products;
-  }
+  switch(event.target.value){
+  /*
+  Feature 3 - Filter by recent products
+  As a user
+  I want to filter by recent products
+  So that I can browse the new released products (less than 2 weeks)
+  */
+    case "Recently released" :
+      products.result=recent_products(products.result);
+      break;
 
   /*
   Feature 4 - Filter by reasonable price
@@ -272,23 +461,76 @@ selectFilter.addEventListener('change', async (event) =>{
   I want to filter by reasonable price
   So that I can buy affordable product i.e less than 50€
   */
-  else {
-    
-    products.result.forEach(
-      element => 
-        {
-         if(element.price<=50)
-           recent_products.push(element)
-     }
-     )
-     products.result=recent_products;
+    case "Reasonable price":
+      let reasonable =[];
+      products.result.forEach(
+        element => 
+          {
+          if(element.price<=50)
+          reasonable.push(element)
+      }
+      )
+      products.result=reasonable;
+      break;
+  /*
+  Feature 14 - Filter by favorite
+  As a user
+  I want to filter by favorite products
+  So that I can load only my favorite products
+  */
+    case "Favorite":
+      products.result=myFavourites
+      break;
+    default :
+      break;
 
   }
+  
   setCurrentProducts(products);//change the pagination
   render(currentProducts, currentPagination,currentBrand);
 });
 
+/*
+Feature 5 - Sort by price
+As a user
+I want to sort by price
+So that I can easily identify cheapest and expensive products
 
+Feature 6 - Sort by date
+As a user
+I want to sort by price
+So that I can easily identify recent and old products
+*/
+selectSort.addEventListener('change', async (event) =>{
+  const products = await fetchProducts(parseInt(selectPage.value),parseInt(selectShow.value),selectBrand.value)
+  let sorted_products=[]
+
+  switch (event.target.value){
+    case "price-asc":
+      sorted_products = sort(products.result,true);
+      console.log("sort the products by prices : cheapest to highest",sorted_products);
+      break;
+    case "price-desc":
+      //sorted_products = sort(products.result,false);
+      sorted_products=products.result.sort((a,b) => (a.price<b.price)?1:-1);
+      console.log("sort the products by prices : Expensive to cheapest",sorted_products);
+      break;
+    case "date-asc":
+      sorted_products=products.result.sort((a,b) => (Date.parse(a.released)<Date.parse(b.released))?1:-1);
+      console.log("sort the products by dates : newest to oldest",sorted_products);
+      break;    
+    case "date-desc":
+      sorted_products=products.result.sort((a,b) => (Date.parse(a.released)>Date.parse(b.released))?1:-1);
+      console.log("sort the products by dates : oldest to newest",sorted_products);
+      break;
+    default :
+      break;
+  }
+ 
+  products.result=sorted_products;
+  setCurrentProducts(products);//change the pagination
+  render(currentProducts, currentPagination,currentBrand);
+});
 
 document.addEventListener('DOMContentLoaded', async () => {
    const products = await fetchProducts();
@@ -298,61 +540,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
 
-
-/*
-Feature 5 - Sort by price
-As a user
-I want to sort by price
-So that I can easily identify cheapest and expensive products
-*/
-/*
-Feature 6 - Sort by date
-As a user
-I want to sort by price
-So that I can easily identify recent and old products
-*/
-/*
-Feature 8 - Number of products indicator
-As a user
-I want to indicate the total number of products
-So that I can understand how many products is available
-*/
-/*
-Feature 9 - Number of recent products indicator
-As a user
-I want to indicate the total number of recent products
-So that I can understand how many new products are available
-*/
-/*
-Feature 10 - p50, p90 and p95 price value indicator
-As a user
-I want to indicate the p50, p90 and p95 price value
-So that I can understand the price values of the products
-*/
-/*
-Feature 11 - Last released date indicator
-As a user
-I want to indicate the last released date
-So that I can understand if we have new products
-*/
-/*
-Feature 12 - Open product link
-As a user
-I want to open product link in a new page
-So that I can buy the product easily
-*/
-/*
-Feature 13 - Save as favorite
-As a user
-I want to save a product as favorite
-So that I can retreive this product later
-*/
-/*
-Feature 14 - Filter by favorite
-As a user
-I want to filter by favorite products
-So that I can load only my favorite products
-*/
 /*
 Feature 15 - Usable and pleasant UX
 As a user
