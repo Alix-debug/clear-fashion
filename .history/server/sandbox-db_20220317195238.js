@@ -75,8 +75,8 @@ async function sandbox () {
     console.log(`👕 ${sorted_by_price.length} total of products sorted by price`);
 
     //Find all products sorted by date 
-    console.log('💽  Find all products all products sorted by date ');
-    const sorted_by_date = await db.aggregate([{$sort : {"date": 1}}]);
+    console.log('💽  Find all products all products sorted by price ');
+    const sorted_by_date = await db.aggregate({$sort : {"date": 1}});
     console.log(`👕 ${sorted_by_date.length} total of products sorted by price`);
 
     //Find all products scraped less than 2 weeks

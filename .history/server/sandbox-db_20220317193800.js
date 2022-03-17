@@ -71,18 +71,18 @@ async function sandbox () {
 
     //Find all products sorted by price 
     console.log('💽  Find all products all products sorted by price ');
-    const sorted_by_price = await db.aggregate([{$sort : {"price": 1} }]);
+    const sorted_by_price = await db.aggregate({$sort : {"price": 1}});
     console.log(`👕 ${sorted_by_price.length} total of products sorted by price`);
 
     //Find all products sorted by date 
-    console.log('💽  Find all products all products sorted by date ');
-    const sorted_by_date = await db.aggregate([{$sort : {"date": 1}}]);
-    console.log(`👕 ${sorted_by_date.length} total of products sorted by price`);
+    // console.log('💽  Find all products all products sorted by price ');
+    // const sorted_by_date = await db.aggregate({$sort : {"date": 1}});
+    // console.log(`👕 ${sorted_by_date.length} total of products sorted by price`);
 
     //Find all products scraped less than 2 weeks
-    console.log('💽  Find all products all products recently scraped ');
-    const recent_products = await db.aggregate([{ "$match": { "$expr": { "$gt": ["$date", twoweeksago] } } }]);
-    console.log(`👕 ${recent_products.length} total of products sorted by price`);
+    // console.log('💽  Find all products all products recently scraped ');
+    // const recent_products = await db.aggregate([{ "$match": { "$expr": { "$gt": ["$date", twoweeksago] } } }]);
+    // console.log(`👕 ${recent_products.length} total of products sorted by price`);
 
 
     db.close();

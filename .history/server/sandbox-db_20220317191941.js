@@ -62,7 +62,7 @@ async function sandbox () {
     console.log('💽  Find Loom products only');
     const loomOnly = await db.find({'brand': 'loom'});
     console.log(`👕 ${loomOnly.length} total of products found for Loom`);
-    //console.log(loomOnly);
+    console.log(loomOnly);
 
     //Find all products less than a price
     console.log('💽  Find all products less than 40$')
@@ -71,13 +71,13 @@ async function sandbox () {
 
     //Find all products sorted by price 
     console.log('💽  Find all products all products sorted by price ');
-    const sorted_by_price = await db.aggregate([{$sort : {"price": 1} }]);
+    const sorted_by_price = await db.aggregate({$sort : {"price": 1}});
     console.log(`👕 ${sorted_by_price.length} total of products sorted by price`);
 
     //Find all products sorted by date 
-    console.log('💽  Find all products all products sorted by date ');
-    const sorted_by_date = await db.aggregate([{$sort : {"date": 1}}]);
-    console.log(`👕 ${sorted_by_date.length} total of products sorted by price`);
+    console.log('💽  Find all products all products sorted by price ');
+    const sorted_by_date = await db.aggregate({$sort : {"date": 1}});
+    console.log(`👕 ${sorted_by_price.length} total of products sorted by price`);
 
     //Find all products scraped less than 2 weeks
     console.log('💽  Find all products all products recently scraped ');
