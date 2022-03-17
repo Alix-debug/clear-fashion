@@ -30,7 +30,7 @@ app.get('/products/:id', async (request, response, next) => {
 });
 
 app.get('/products/search', async (request, response) => {
-  console.log(`🕵️‍♀️ search 1a specific product identify by a specific query : ${request.query}`);
+  console.log(`🕵️‍♀️ search a specific product identify by a specific query : ${request.query}`);
   let query = {}
   let limit = 12;
   if (request.query.limit!=null){
