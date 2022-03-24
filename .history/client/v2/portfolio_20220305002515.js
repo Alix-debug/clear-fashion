@@ -1,5 +1,4 @@
 // Invoking strict mode https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Strict_mode#invoking_strict_mode
-//  Production: https://client-delta-sepia.vercel.app (à rendre)
 'use strict';
 // All distinct brands
 const all_brands = ['loom', 'coteleparis', 'adresse', '1083', 'dedicated'];
@@ -197,13 +196,11 @@ function onlyUnique(value, index, self) {
  * @param  {Number}  [size=12] - size of the page (per default at 12)
  * @return {Object}
  */
-const fetchProducts = async (page = 1, limit = 12,brandname="") => { 
+const fetchProducts = async (page = 1, size = 12,brandname="") => {
   try {
-      //limit=5&brand=loom&price=300
-      //`https://server-dun-xi.vercel.app/products/search?page=${page}&size=${size}&brand=${brandname}` //changer param
-
+   
       const response = await fetch(
-        `https://server-dun-xi.vercel.app/products/search?limit=${limit}&brand=${brandname}` //changer param
+        `https://clear-fashion-api.vercel.app?page=${page}&size=${size}&brand=${brandname}`
       );
       const body = await response.json();
     
