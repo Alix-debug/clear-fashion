@@ -40,9 +40,8 @@ async function sandbox () {
 
     console.log(`👕 ${results.length} results of promises found`);
     console.log(`👕 ${results.flat().length} products found`);
-
-    console.log(results);
-    console.log(results.flat());
+    //console.log(results);
+    //console.log(results.flat());
 
     products.push(results.flat());
     products = products.flat();
